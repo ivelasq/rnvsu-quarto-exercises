@@ -1,7 +1,7 @@
 # Getting Started with Quarto: A Hands-On Workshop
 
 <!-- badges: start -->
-[![Launch Posit Cloud](https://img.shields.io/badge/launch-posit%20cloud-447099?style=flat)](https://posit.cloud/content/11332810)
+[![Launch Posit Cloud](https://img.shields.io/badge/launch-posit%20cloud-447099?style=flat)](https://posit.cloud/content/12393384)
 <!-- badges: end -->
 
 ## Details
