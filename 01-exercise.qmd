@@ -8,10 +8,12 @@ format:
 execute:
   warning: false
   message: false
+author: Isabella
 ---
 
 ```{r}
 #| label: setup
+#| include: false
 library(tidyverse)
 library(gt)
 
@@ -47,12 +49,12 @@ renewable_share <- totals |>
   mutate(Share = round(Renewable / (Renewable + `Non-Renewable`) * 100, 1))
 
 latest_share <- renewable_share |> filter(Year == latest_year) |> pull(Share)
-earliest_share <- renewable_share |> filter(Year == min(Year)) |> pull(Share)
+earlier_share <- renewable_share |> filter(Year == "2019") |> pull(Share)
 ```
 
 ## Key Findings at a Glance
 
-Coal has dominated Philippine electricity generation throughout the period, but renewables have grown steadily. In `r latest_year`, renewable sources (geothermal, hydropower, solar, wind, biofuels, and waste) accounted for **`r latest_share`%** of total generation, up from **`r earliest_share`%** in 2000.
+Coal has dominated Philippine electricity generation throughout the period, but renewables have grown steadily. In 2023, renewable sources (geothermal, hydropower, solar, wind, biofuels, and waste) accounted for 22.3% of total generation, up from 20.8% in 2019.
 
 ## 1. Generation by Source in `r latest_year`
 
