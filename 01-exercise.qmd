@@ -1,0 +1,110 @@
+---
+title: "Electricity Generation in the Philippines"
+format:
+  html:
+    code-fold: false
+    code-summary: "Show code"
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(gt)
+
+energy <- read_csv("energy.csv", col_names = c("Source", "Value", "Year", "Units"), skip = 1)
+
+latest_year <- max(energy$Year)
+
+recent <- energy |>
+  filter(Year == latest_year) |>
+  arrange(desc(Value))
+
+total_by_source <- energy |>
+  group_by(Source) |>
+  summarise(
+    `First Year` = min(Year),
+    `Latest Year` = max(Year),
+    `Min (GWh)` = min(Value),
+    `Max (GWh)` = max(Value),
+    `Latest (GWh)` = Value[Year == max(Year)],
+    .groups = "drop"
+  ) |>
+  arrange(desc(`Latest (GWh)`))
+
+renewables <- c("Geothermal", "Hydropower", "Solar PV", "Wind", "Biofuels", "Waste")
+
+totals <- energy |>
+  mutate(Type = if_else(Source %in% renewables, "Renewable", "Non-Renewable")) |>
+  group_by(Year, Type) |>
+  summarise(Value = sum(Value), .groups = "drop")
+
+renewable_share <- totals |>
+  pivot_wider(names_from = Type, values_from = Value) |>
+  mutate(Share = round(Renewable / (Renewable + `Non-Renewable`) * 100, 1))
+
+latest_share <- renewable_share |> filter(Year == latest_year) |> pull(Share)
+earliest_share <- renewable_share |> filter(Year == min(Year)) |> pull(Share)
+```
+
+## Key Findings at a Glance
+
+Coal has dominated Philippine electricity generation throughout the period, but renewables have grown steadily. In `r latest_year`, renewable sources (geothermal, hydropower, solar, wind, biofuels, and waste) accounted for **`r latest_share`%** of total generation, up from **`r earliest_share`%** in 2000.
+
+## 1. Generation by Source in `r latest_year`
+
+A snapshot of the current energy mix reveals the relative contribution of each source. This section shows total generation (GWh) by source for the most recent year in the dataset, ordered from largest to smallest.
+
+```{r}
+#| label: tbl-latest
+#| tbl-cap: "Electricity Generation by Source"
+recent |>
+  mutate(Type = if_else(Source %in% renewables, "Renewable", "Non-Renewable")) |>
+  select(Source, Type, `GWh` = Value) |>
+  gt() |>
+  fmt_number(columns = GWh, decimals = 0) |>
+  cols_label(Source = "Energy Source", Type = "Category") |>
+  tab_header(title = paste("Electricity Generation by Source in", latest_year))
+```
+
+Coal alone accounts for the largest share of generation, while geothermal and hydropower are the leading renewable contributors. Solar PV and wind remain small but are growing rapidly from a low base.
+
+## 2. Historical Range by Source (2000–`r latest_year`)
+
+Examining the full time range shows how each source has evolved. This table summarises the minimum, maximum, and latest annual generation for each source, indicating which technologies have expanded or contracted over two decades.
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Historical Generation Summary by Source"
+total_by_source |>
+  gt() |>
+  fmt_number(columns = c(`Min (GWh)`, `Max (GWh)`, `Latest (GWh)`), decimals = 0) |>
+  tab_header(title = "Historical Generation Summary by Source (GWh)")
+```
+
+Coal shows the steepest growth, roughly tripling from its 2000 minimum to its recent peak. Solar PV and wind both record near-zero minimums, reflecting their late entry into the grid, and have grown substantially in recent years.
+
+## 3. Renewable vs. Non-Renewable Share Over Time
+
+While absolute generation volumes tell one story, the renewable share of the total mix reveals the pace of the energy transition. This chart plots the percentage of generation from renewable sources each year from 2000 to `r latest_year`.
+
+```{r}
+#| label: fig-share
+#| fig-cap: "Renewable Share of Total Electricity Generation (%)"
+ggplot(renewable_share, aes(x = Year, y = Share)) +
+  geom_line(color = "#2E8B57", linewidth = 1.1) +
+  geom_point(color = "#2E8B57", size = 2.5) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "grey50") +
+  annotate("text", x = min(renewable_share$Year) + 0.3, y = 51.5,
+           label = "50% threshold", hjust = 0, size = 3.2, color = "grey40") +
+  labs(
+    y = "Renewable Share (%)",
+    x = ""
+  ) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank()) +
+  scale_y_continuous(limits = c(0, 80), labels = scales::label_percent(scale = 1))
+```

@@ -1,0 +1,80 @@
+---
+title: "Electricity Generation in the Philippines"
+format:
+  dashboard:
+    orientation: columns
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(gt)
+
+energy <- read_csv("energy.csv", col_names = c("Source", "Value", "Year", "Units"), skip = 1)
+
+latest_year <- max(energy$Year)
+recent <- energy |> filter(Year == latest_year)
+
+total_by_source <- energy |>
+  group_by(Source) |>
+  summarise(
+    `First Year` = min(Year),
+    `Latest Year` = max(Year),
+    `Min (GWh)` = min(Value),
+    `Max (GWh)` = max(Value),
+    `Latest (GWh)` = Value[Year == max(Year)]
+  )
+```
+
+The Philippines relies on a mix of conventional and renewable sources. In `r latest_year`, coal remained the dominant source while renewables such as geothermal, hydropower, solar, and wind continued to grow.
+
+## Column
+
+### 1. Generation by Source in `r latest_year`
+
+```{r}
+#| label: tbl-latest
+recent |>
+  arrange(desc(Value)) |>
+  select(Source, `GWh` = Value) |>
+  gt() |>
+  fmt_number(columns = GWh, decimals = 0) |>
+  cols_label(Source = "Energy Source")
+```
+
+### 2. Historical Range by Source (2000–`r latest_year`)
+
+```{r}
+#| label: tbl-summary
+total_by_source |>
+  arrange(desc(`Latest (GWh)`)) |>
+  gt() |>
+  fmt_number(columns = c(`Min (GWh)`, `Max (GWh)`, `Latest (GWh)`), decimals = 0)
+```
+
+## Column
+
+### 3. Generation Trends by Source Over Time
+
+```{r}
+#| label: fig-trends
+#| fig-cap: "Annual Electricity Generation by Source (GWh)"
+
+ggplot(energy, aes(x = Year, y = Value, color = Source)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.5) +
+  labs(
+    y = "Generation (GWh)",
+    x = "",
+    color = "Source"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(labels = scales::comma)
+```
